@@ -1,5 +1,7 @@
 package com.halfopen.iwash.hook;
 
+import android.content.Context;
+
 import de.robv.android.xposed.IXposedHookInitPackageResources;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
@@ -9,6 +11,7 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_InitPackageResources;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
+import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
 import static de.robv.android.xposed.XposedHelpers.findClass;
 
 /**
@@ -17,6 +20,7 @@ import static de.robv.android.xposed.XposedHelpers.findClass;
 
 public class MainHook  implements IXposedHookLoadPackage ,IXposedHookZygoteInit, IXposedHookInitPackageResources {
 
+    public static Context applicationContext=null;
 
     /**
      * 加载时
@@ -29,90 +33,31 @@ public class MainHook  implements IXposedHookLoadPackage ,IXposedHookZygoteInit,
 
         if (lpparam.packageName.equals("com.aijie.xidi")) {
 
-            XposedBridge.log("----------------------------iwash loaded--------------------------");
+            try {
+                Class<?> ContextClass = findClass("android.content.ContextWrapper", lpparam.classLoader);
+                findAndHookMethod(ContextClass, "getApplicationContext", new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        super.afterHookedMethod(param);
+                        if (applicationContext != null)
+                            return;
+                        applicationContext = (Context) param.getResult();
+                        XposedBridge.log("CSDN_LQR-->得到上下文");
+                    }
+                });
+            } catch (Throwable t) {
+                XposedBridge.log("CSDN_LQR-->获取上下文出错");
+                XposedBridge.log(t);
+            }
 
-            Class<?> APPContext = findClass("com.aijie.xidi.activity.base.APPContext", lpparam.classLoader);
-            XposedBridge.log("myiwash" + "appcontext" + APPContext);
-            /**
-             * A 方法是从preference读取余额的方法
-             */
-            XposedHelpers.findAndHookMethod(APPContext, "A", new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    super.beforeHookedMethod(param);
-                    XposedBridge.log("myiwash" + "resume");
-                }
 
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    XposedBridge.log("myiwash" + "after resume");
-                    String result = (String) param.getResult();
-                    XposedBridge.log("myiwash" + "after resume result" + result);
-                    // 修改返回结果
-                    param.setResult("8.00");
-                }
-            });
+            //new AppContextHook().hook(lpparam);
+            new HttpHook().hook(lpparam);
+
         }
 
         if( lpparam.packageName.equals("com.eg.laundry")){
-            Class<?> LaundryMachine = findClass("com.eg.laundry.types.LaundryMachine", lpparam.classLoader);
-            XposedBridge.log("myiwash" + "LaundryMachine" + LaundryMachine);
-
-            XposedHelpers.findAndHookMethod(LaundryMachine, "isAuthened", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    // 修改返回结果
-                    param.setResult(true);
-                }
-            });
-
-            XposedHelpers.findAndHookMethod(LaundryMachine, "isPayedForWash", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    param.setResult(true);
-                }
-            });
-
-            XposedHelpers.findAndHookMethod(LaundryMachine, "isPayedForDry", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    param.setResult(true);
-                }
-            });
-
-            XposedHelpers.findAndHookMethod(LaundryMachine, "isPayedForStove", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    param.setResult(true);
-                }
-            });
-
-            XposedHelpers.findAndHookMethod(LaundryMachine, "getPrice1", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    param.setResult(-100.0D);
-                }
-            });
-            XposedHelpers.findAndHookMethod(LaundryMachine, "getPrice2", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    param.setResult(-100.0D);
-                }
-            });
-            XposedHelpers.findAndHookMethod(LaundryMachine, "getPrice3", new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    param.setResult(-100.0D);
-                }
-            });
+            //new LaundryMachineHook().hook(lpparam);
         }
 
     }
